@@ -119,19 +119,21 @@ func selectProject(again ...bool) {
 	for id, project := range projects {
 		fmt.Println("\t"+id, ":", project.title)
 	}
+	count := len(projects) + 4 + len(again)
+	fmt.Println("\t0 : Create new project")
 	fmt.Println("\tPress enter to return")
 	switch input := getInput(); input {
 	case "":
-		count := len(projects) + 3 + len(again)
 		clearLines(count)
 		menu()
+	case "0":
+		clearLines(count)
+		createProject()
 	default:
 		if _, ok := projects[input]; ok {
-			count := len(projects) + 3 + len(again)
 			clearLines(count)
 			projectMenu(input)
 		} else {
-			count := len(projects) + 3 + len(again)
 			clearLines(count)
 			fmt.Println("Invalid input")
 			selectProject(true)
@@ -145,8 +147,10 @@ func projectMenu(projectId string, again ...bool) {
 	fmt.Println("\t2. Add reference")
 	fmt.Println("\t3. Remove reference")
 	fmt.Println("\t4. Export references")
+	fmt.Println("\t5. Edit project")
+	fmt.Println("\t6. Delete project")
 	fmt.Println("\tPress enter to return")
-	count := 7 + len(again)
+	count := 9 + len(again)
 	switch input := getInput(); input {
 	case "1":
 		clearLines(count)
@@ -160,6 +164,12 @@ func projectMenu(projectId string, again ...bool) {
 	case "4":
 		clearLines(count)
 		exportReferences(projectId)
+	case "5":
+		clearLines(count)
+		editProject(projectId)
+	case "6":
+		clearLines(count)
+		deleteProject(projectId)
 	case "":
 		clearLines(count)
 		selectProject()
@@ -190,7 +200,7 @@ func addReference(projectId string, again ...bool) {
 			count++
 		}
 	}
-	fmt.Println("\t0. New reference")
+	fmt.Println("\t0 : New reference")
 	fmt.Println("\tPress enter to return")
 		switch input := getInput(); input {
 	case "0":
@@ -257,20 +267,20 @@ func removeReference(projectId string, again ...bool) {
 }
 
 func newReference() Reference {
-	fmt.Println("Enter title")
+	fmt.Println("Enter title:")
 	title := getInput()
-	fmt.Println("Enter year")
+	fmt.Println("Enter year:")
 	year := getInput()
-	fmt.Println("Enter month")
+	fmt.Println("Enter month:")
 	month := getInput()
-	fmt.Println("Enter publisher")
+	fmt.Println("Enter publisher:")
 	publisher := getInput()
-	fmt.Println("Enter url")
+	fmt.Println("Enter url:")
 	url := getInput()
 	var authors []string
 	count := 4 
 	for true {
-		fmt.Println("Enter author. Press enter to finish")
+		fmt.Println("Enter author: (Press enter to finish)")
 		author := getInput()
 		if len(authors) == 0 && author == "" {
 			fmt.Println("Please enter at least one author")
@@ -281,7 +291,9 @@ func newReference() Reference {
 		}
 		authors = append(authors, author)
 	}
-	id := authors[0] + year + month
+	// Remove spaces from id
+	id := authors[0] + year
+	id = strings.Replace(id, " ", "", -1)
 	if _, ok := references[id]; ok {
 		id += "a"
 	}
@@ -583,6 +595,105 @@ func viewReference(referenceId string) {
 	clearLines(8)
 	referenceMenu(referenceId)
 }
+
+func createProject() {
+	fmt.Println("Enter project title:")
+	title := getInput()
+	fmt.Println("Enter id:")
+	id := getInput()
+	if _, ok := projects[id]; ok {
+		clearLines(4)
+		fmt.Println("Project with this id already exists")
+	}else
+	{
+		projects[id] = Project{
+			id: id,
+			title: title,
+			references: make(map[string]Reference),
+		}
+		saveProjects()
+		clearLines(4)
+		fmt.Println("Project created")
+	}
+	fmt.Println("Press enter to continue")
+	getInput()
+	clearLines(3)
+	selectProject()
+}
+
+func editProject(projectId string) {
+	fmt.Println("Editing project:", projects[projectId].title)
+	fmt.Println("1. Edit title")
+	fmt.Println("2. Edit id")
+	fmt.Println("Press enter to return")
+	project := projects[projectId]
+	switch input := getInput(); input {
+	case "1":
+		clearLines(4)
+		fmt.Println("Enter new title")
+		project.title = getInput()
+		projects[projectId] = project
+		saveProjects()
+		clearLines(2)
+		fmt.Println("Title changed")
+		fmt.Println("Press enter to continue")
+		getInput()
+		clearLines(4)
+		editProject(projectId)
+	case "2":
+		clearLines(4)
+		fmt.Println("Enter new id")
+		newId := getInput()
+		if _, ok := projects[newId]; ok {
+			clearLines(2)
+			fmt.Println("Project with this id already exists")
+			fmt.Println("Press enter to continue")
+			getInput()
+			clearLines(4)
+			editProject(projectId)
+		}else
+		{
+			project.id = newId
+			projects[newId] = project
+			delete(projects, projectId)
+		}
+		saveProjects()
+		clearLines(2)
+		fmt.Println("Id changed")
+		fmt.Println("Press enter to continue")
+		getInput()
+		clearLines(4)
+		editProject(newId)
+	default:
+		clearLines(4)
+		projectMenu(projectId)
+	}
+}
+
+func deleteProject(projectId string, again ...bool) {
+	fmt.Println("Are you sure you want to delete project", projects[projectId].title, "?")
+	fmt.Println("y/n")
+	count := 3 + len(again)
+	switch input := getInput(); input {
+	case "y":
+		clearLines(count)
+		delete(projects, projectId)
+		saveProjects()
+		fmt.Println("Project deleted")
+		fmt.Println("Press enter to continue")
+		getInput()
+		clearLines(2)
+		selectProject()
+	case "n":
+		clearLines(count)
+		projectMenu(projectId)
+	default:
+		clearLines(count)
+		fmt.Println("Invalid input")
+		deleteProject(projectId,true)
+	}
+}
+
 
 // HELPER FUNCTIONS
 
